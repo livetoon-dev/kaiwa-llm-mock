@@ -29,6 +29,22 @@ const LLM_MODELS = [
   { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google' },
   { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite', provider: 'Google' },
   { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'Google' },
+  // xAI Grok 4.1 (Latest - 2M context)
+  { id: 'grok-4-1-fast-reasoning', name: 'Grok 4.1 Fast Reasoning', provider: 'xAI' },
+  { id: 'grok-4-1-fast-non-reasoning', name: 'Grok 4.1 Fast', provider: 'xAI' },
+  // xAI Grok 4
+  { id: 'grok-4', name: 'Grok 4', provider: 'xAI' },
+  { id: 'grok-4-fast-non-reasoning', name: 'Grok 4 Fast', provider: 'xAI' },
+  // xAI Grok Code
+  { id: 'grok-code-fast-1', name: 'Grok Code Fast', provider: 'xAI' },
+  // xAI Grok 3
+  { id: 'grok-3', name: 'Grok 3', provider: 'xAI' },
+  { id: 'grok-3-fast', name: 'Grok 3 Fast', provider: 'xAI' },
+  { id: 'grok-3-mini', name: 'Grok 3 Mini', provider: 'xAI' },
+  { id: 'grok-3-mini-fast', name: 'Grok 3 Mini Fast', provider: 'xAI' },
+  // xAI Grok 2
+  { id: 'grok-2-1212', name: 'Grok 2', provider: 'xAI' },
+  { id: 'grok-2-vision-1212', name: 'Grok 2 Vision', provider: 'xAI' },
 ];
 
 export default function ChatPage() {
