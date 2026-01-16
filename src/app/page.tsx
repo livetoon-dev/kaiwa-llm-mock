@@ -56,8 +56,12 @@ export default function ChatPage() {
   const [nsfwLevel, setNsfwLevel] = useState<'soft' | 'explicit'>('soft');
   const [allowViolence, setAllowViolence] = useState(false);
   const [streamEnabled, setStreamEnabled] = useState(true);
+  const [ttsEnabled, setTtsEnabled] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens] = useState(1024);
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // NSFW System Prompt additions
   const getNsfwPrompt = () => {
@@ -95,6 +99,50 @@ export default function ChatPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // TTS playback function
+  const playTTS = async (text: string) => {
+    if (!ttsEnabled || !text) return;
+
+    try {
+      setIsPlayingAudio(true);
+      const response = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!response.ok) {
+        console.error('TTS error:', await response.text());
+        return;
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+
+      audio.onended = () => {
+        setIsPlayingAudio(false);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      audio.onerror = () => {
+        setIsPlayingAudio(false);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      await audio.play();
+    } catch (error) {
+      console.error('TTS playback error:', error);
+      setIsPlayingAudio(false);
+    }
+  };
 
   const startConversation = () => {
     const sessionId = `session-${Date.now()}`;
@@ -217,6 +265,11 @@ export default function ChatPage() {
       addMessage(storedAssistantMessage);
 
       setMessages(prev => [...prev, assistantMessage]);
+
+      // Play TTS if enabled
+      if (ttsEnabled) {
+        playTTS(data.content);
+      }
     } catch (error) {
       console.error('Failed to send message:', error);
       // Fallback to mock response on error
@@ -498,6 +551,25 @@ export default function ChatPage() {
                   className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 disabled:opacity-60"
                 />
                 <span className="text-sm text-slate-700">ストリーミング応答</span>
+              </label>
+
+              {/* TTS */}
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={ttsEnabled}
+                  onChange={(e) => setTtsEnabled(e.target.checked)}
+                  className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-700">音声読み上げ (TTS)</span>
+                  {isPlayingAudio && (
+                    <span className="flex items-center gap-1 text-xs text-indigo-600">
+                      <span className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse"></span>
+                      再生中
+                    </span>
+                  )}
+                </div>
               </label>
             </div>
           </div>
