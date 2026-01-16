@@ -161,7 +161,7 @@ async function callGrok(
   return data.choices[0].message.content;
 }
 
-export const onRequestPost: PagesFunction<Env> = async (context) => {
+export async function onRequestPost(context: { request: Request; env: Env }) {
   const { request, env } = context;
 
   try {
