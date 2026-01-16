@@ -161,73 +161,47 @@ async function callGrok(
   return data.choices[0].message.content;
 }
 
-// CORS headers
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
+export const onRequestPost: PagesFunction<Env> = async (context) => {
+  const { request, env } = context;
 
-export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    // Handle CORS preflight
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { headers: corsHeaders });
+  try {
+    const body: ChatRequest = await request.json();
+    const { model, messages, temperature = 0.7, maxTokens = 1024, systemPrompt } = body;
+
+    const allMessages: ChatMessage[] = systemPrompt
+      ? [{ role: 'system', content: systemPrompt }, ...messages]
+      : messages;
+
+    let content: string;
+
+    const cerebrasModels = ['llama-3.3-70b', 'llama3.1-8b', 'qwen-3-32b', 'qwen-3-235b-a22b-instruct-2507', 'gpt-oss-120b'];
+    const geminiModels = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro'];
+    const grokModels = [
+      'grok-4-1-fast-reasoning', 'grok-4-1-fast-non-reasoning',
+      'grok-4', 'grok-4-fast-non-reasoning', 'grok-code-fast-1',
+      'grok-3', 'grok-3-fast', 'grok-3-mini', 'grok-3-mini-fast',
+      'grok-2-1212', 'grok-2-vision-1212',
+    ];
+
+    if (cerebrasModels.includes(model) || model.startsWith('llama') || model.startsWith('qwen') || model.startsWith('gpt-oss')) {
+      content = await callCerebras(env.CEREBRAS_API_KEY, model, allMessages, temperature, maxTokens);
+    } else if (geminiModels.includes(model) || model.startsWith('gemini')) {
+      content = await callGemini(env.GEMINI_API_KEY, model, allMessages, temperature, maxTokens);
+    } else if (grokModels.includes(model) || model.startsWith('grok')) {
+      content = await callGrok(env.GROK_API_KEY, model, allMessages, temperature, maxTokens);
+    } else {
+      throw new Error(`Unsupported model: ${model}`);
     }
 
-    const url = new URL(request.url);
-
-    // Health check
-    if (url.pathname === '/health') {
-      return new Response(JSON.stringify({ status: 'ok' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Chat endpoint
-    if (url.pathname === '/api/chat' && request.method === 'POST') {
-      try {
-        const body: ChatRequest = await request.json();
-        const { model, messages, temperature = 0.7, maxTokens = 1024, systemPrompt } = body;
-
-        const allMessages: ChatMessage[] = systemPrompt
-          ? [{ role: 'system', content: systemPrompt }, ...messages]
-          : messages;
-
-        let content: string;
-
-        const cerebrasModels = ['llama-3.3-70b', 'llama3.1-8b', 'qwen-3-32b', 'qwen-3-235b-a22b-instruct-2507', 'gpt-oss-120b'];
-        const geminiModels = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro'];
-        const grokModels = [
-          'grok-4-1-fast-reasoning', 'grok-4-1-fast-non-reasoning',
-          'grok-4', 'grok-4-fast-non-reasoning', 'grok-code-fast-1',
-          'grok-3', 'grok-3-fast', 'grok-3-mini', 'grok-3-mini-fast',
-          'grok-2-1212', 'grok-2-vision-1212',
-        ];
-
-        if (cerebrasModels.includes(model) || model.startsWith('llama') || model.startsWith('qwen') || model.startsWith('gpt-oss')) {
-          content = await callCerebras(env.CEREBRAS_API_KEY, model, allMessages, temperature, maxTokens);
-        } else if (geminiModels.includes(model) || model.startsWith('gemini')) {
-          content = await callGemini(env.GEMINI_API_KEY, model, allMessages, temperature, maxTokens);
-        } else if (grokModels.includes(model) || model.startsWith('grok')) {
-          content = await callGrok(env.GROK_API_KEY, model, allMessages, temperature, maxTokens);
-        } else {
-          throw new Error(`Unsupported model: ${model}`);
-        }
-
-        return new Response(
-          JSON.stringify({ success: true, content, model }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        return new Response(
-          JSON.stringify({ success: false, error: message }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-    }
-
-    return new Response('Not Found', { status: 404, headers: corsHeaders });
-  },
+    return new Response(
+      JSON.stringify({ success: true, content, model }),
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return new Response(
+      JSON.stringify({ success: false, error: message }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
 };
