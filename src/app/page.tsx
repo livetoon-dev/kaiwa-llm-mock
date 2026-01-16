@@ -109,7 +109,13 @@ export default function ChatPage() {
       const response = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({
+          text,
+          voicepack: 'default', // Can be: default, seiso, uranai, zange, yasaike
+          alpha: 0.3,
+          beta: 0.7,
+          speed: 1.0,
+        }),
       });
 
       if (!response.ok) {
