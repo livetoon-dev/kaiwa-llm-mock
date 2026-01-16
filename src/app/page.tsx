@@ -4,6 +4,9 @@ import { useState, useRef, useEffect } from 'react';
 import { mockCharacters, mockPromptVersions } from '@/data/mockData';
 import { addSession, updateSession, addMessage, StoredSession, StoredMessage } from '@/lib/storage';
 
+// API URL - Worker URL for production, local for dev
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/chat';
+
 const characterEmojis: Record<string, string> = {
   'una-001': '🐰',
   'sakura-001': '🌸',
@@ -174,7 +177,7 @@ export default function ChatPage() {
       }));
 
       // Call the chat API
-      const response = await fetch('/api/chat', {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
