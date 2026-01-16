@@ -1,5 +1,7 @@
-import { mockCharacters, mockPromptVersions, mockConversationSessions } from '@/data/mockData';
-import Link from 'next/link';
+'use client';
+
+import { useState, useRef, useEffect } from 'react';
+import { mockCharacters, mockPromptVersions } from '@/data/mockData';
 
 const characterEmojis: Record<string, string> = {
   'una-001': '🐰',
@@ -7,174 +9,403 @@ const characterEmojis: Record<string, string> = {
   'kai-001': '🏄',
 };
 
-export default function Dashboard() {
-  const activePrompts = mockPromptVersions.filter(p => p.isActive).length;
-  const totalSessions = mockConversationSessions.length;
-  const totalMessages = mockConversationSessions.reduce((sum, s) => sum + s.messageCount, 0);
-
-  return (
-    <div className="animate-fadeIn">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-800 mb-2">Dashboard</h1>
-        <p className="text-slate-500">LLM Character System Overview</p>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard
-          title="Characters"
-          value={mockCharacters.length}
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          }
-          gradient="from-violet-500 to-purple-600"
-          trend="+2 this week"
-        />
-        <StatCard
-          title="Active Prompts"
-          value={activePrompts}
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          }
-          gradient="from-emerald-500 to-teal-600"
-          trend="v1.5 latest"
-        />
-        <StatCard
-          title="Conversations"
-          value={totalSessions}
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-          }
-          gradient="from-blue-500 to-indigo-600"
-          trend="+5 today"
-        />
-        <StatCard
-          title="Total Messages"
-          value={totalMessages}
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-          }
-          gradient="from-amber-500 to-orange-600"
-          trend="avg 13/session"
-        />
-      </div>
-
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Conversations */}
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-800">Recent Conversations</h2>
-            <Link href="/conversations" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
-              View all →
-            </Link>
-          </div>
-          <div className="divide-y divide-slate-100">
-            {mockConversationSessions.slice(0, 4).map((session) => {
-              const character = mockCharacters.find(c => c.id === session.characterId);
-              return (
-                <div key={session.id} className="px-6 py-4 hover:bg-slate-50 transition-colors cursor-pointer">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-lg shrink-0">
-                        {characterEmojis[session.characterId] || '👤'}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-slate-800 truncate">{session.firstMessage?.slice(0, 40)}...</p>
-                        <p className="text-sm text-slate-500 mt-0.5">
-                          {character?.displayName} · {new Date(session.startedAt).toLocaleDateString('ja-JP')} · {session.messageCount} messages
-                        </p>
-                      </div>
-                    </div>
-                    <span className="px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-medium shrink-0">
-                      {session.promptVersion}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Active Prompts by Character */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-800">Active Prompts</h2>
-            <Link href="/prompts" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
-              Manage →
-            </Link>
-          </div>
-          <div className="p-4 space-y-3">
-            {mockCharacters.map((char) => {
-              const activePrompt = mockPromptVersions.find(p => p.characterId === char.id && p.isActive);
-              const promptCount = mockPromptVersions.filter(p => p.characterId === char.id).length;
-              return (
-                <div
-                  key={char.id}
-                  className="p-4 rounded-xl bg-gradient-to-r from-slate-50 to-slate-100/50 border-2 border-transparent hover:border-indigo-200 transition-all cursor-pointer"
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-2xl">{characterEmojis[char.id] || '👤'}</span>
-                    <div className="flex-1">
-                      <span className="font-semibold text-slate-800">{char.displayName}</span>
-                      <span className="text-slate-400 text-sm ml-2">({promptCount} versions)</span>
-                    </div>
-                  </div>
-                  {activePrompt && (
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200">
-                      <div>
-                        <span className="text-sm text-slate-600">{activePrompt.version}</span>
-                        <span className="text-slate-400 mx-2">·</span>
-                        <span className="text-sm text-slate-500">{activePrompt.description}</span>
-                      </div>
-                      <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
-                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                        Active
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  emotion?: string;
+  timestamp: Date;
 }
 
-function StatCard({
-  title,
-  value,
-  icon,
-  gradient,
-  trend
-}: {
-  title: string;
-  value: number;
-  icon: React.ReactNode;
-  gradient: string;
-  trend: string;
-}) {
+const LLM_MODELS = [
+  { id: 'gpt-4', name: 'GPT-4', provider: 'OpenAI' },
+  { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', provider: 'OpenAI' },
+  { id: 'claude-3-opus', name: 'Claude 3 Opus', provider: 'Anthropic' },
+  { id: 'claude-3-sonnet', name: 'Claude 3 Sonnet', provider: 'Anthropic' },
+  { id: 'gemini-pro', name: 'Gemini Pro', provider: 'Google' },
+];
+
+export default function ChatPage() {
+  const [selectedCharacterId, setSelectedCharacterId] = useState(mockCharacters[0].id);
+  const [selectedModel, setSelectedModel] = useState(LLM_MODELS[0].id);
+  const [nsfwEnabled, setNsfwEnabled] = useState(false);
+  const [streamEnabled, setStreamEnabled] = useState(true);
+  const [temperature, setTemperature] = useState(0.7);
+  const [maxTokens, setMaxTokens] = useState(1024);
+
+  const [isConversationStarted, setIsConversationStarted] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const selectedCharacter = mockCharacters.find(c => c.id === selectedCharacterId);
+  const activePrompt = mockPromptVersions.find(p => p.characterId === selectedCharacterId && p.isActive);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const startConversation = () => {
+    setIsConversationStarted(true);
+    // Add initial greeting from character
+    const greetings: Record<string, string> = {
+      'una-001': 'うなな〜！やっほー！うーなだよ！今日は何して遊ぶ？',
+      'sakura-001': 'あの…こんにちは。図書室へようこそ。何かお探しですか？',
+      'kai-001': 'よっ！元気？今日もいい天気だね〜！',
+    };
+
+    setMessages([{
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: greetings[selectedCharacterId] || 'こんにちは！',
+      emotion: 'happy',
+      timestamp: new Date(),
+    }]);
+  };
+
+  const sendMessage = async () => {
+    if (!inputMessage.trim() || isLoading) return;
+
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: inputMessage.trim(),
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsLoading(true);
+
+    // Mock response (simulating LLM)
+    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
+
+    const mockResponses: Record<string, string[]> = {
+      'una-001': [
+        'うなな〜！それ面白そう！もっと教えてよん！',
+        'うぬぬ…そうなんだ〜。月にはそういうのないからびっくりだよ！',
+        'ぴょんぴょこ！うーなもそれ好き！地球って楽しいね〜！',
+      ],
+      'sakura-001': [
+        'なるほど…そうですか。それは興味深いですね。',
+        'あの…私もそう思います。本で読んだことがあるかもしれません。',
+        'そうですね…少し考えさせてください。',
+      ],
+      'kai-001': [
+        'マジで？それいいね〜！俺も興味あるっしょ！',
+        'へー、そうなんだ！今度一緒にやってみようぜ！',
+        'いいね〜！そういうの好きだわ〜',
+      ],
+    };
+
+    const responses = mockResponses[selectedCharacterId] || ['なるほど！'];
+    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+
+    const assistantMessage: ChatMessage = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: randomResponse,
+      emotion: ['happy', 'excited', 'calm'][Math.floor(Math.random() * 3)],
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, assistantMessage]);
+    setIsLoading(false);
+  };
+
+  const endConversation = () => {
+    setIsConversationStarted(false);
+    setMessages([]);
+  };
+
+  const getEmotionEmoji = (emotion?: string) => {
+    switch (emotion) {
+      case 'happy': return '😊';
+      case 'excited': return '🤩';
+      case 'sad': return '😢';
+      case 'calm': return '😌';
+      case 'shy': return '😳';
+      default: return '';
+    }
+  };
+
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 card-hover">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-slate-500 text-sm font-medium">{title}</p>
-          <p className="text-3xl font-bold text-slate-800 mt-1">{value}</p>
-          <p className="text-xs text-slate-400 mt-2">{trend}</p>
+    <div className="h-full animate-fadeIn">
+      <div className="grid grid-cols-12 gap-6 h-[calc(100vh-120px)]">
+        {/* Main Chat Area */}
+        <div className="col-span-8 flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+          {!isConversationStarted ? (
+            /* Start Screen */
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center max-w-md">
+                <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-6 shadow-xl">
+                  <span className="text-5xl">{characterEmojis[selectedCharacterId] || '👤'}</span>
+                </div>
+                <h1 className="text-2xl font-bold text-slate-800 mb-2">
+                  {selectedCharacter?.displayName}와 대화하기
+                </h1>
+                <p className="text-slate-500 mb-6">
+                  {selectedCharacter?.description}
+                </p>
+                <button
+                  onClick={startConversation}
+                  className="px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
+                >
+                  대화 시작하기
+                </button>
+                <p className="text-xs text-slate-400 mt-4">
+                  프롬프트: {activePrompt?.version} · 모델: {LLM_MODELS.find(m => m.id === selectedModel)?.name}
+                </p>
+              </div>
+            </div>
+          ) : (
+            /* Chat Interface */
+            <>
+              {/* Chat Header */}
+              <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-2xl shadow-lg">
+                    {characterEmojis[selectedCharacterId] || '👤'}
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-slate-800">{selectedCharacter?.displayName}</h2>
+                    <p className="text-xs text-slate-500">
+                      {activePrompt?.version} · {LLM_MODELS.find(m => m.id === selectedModel)?.name}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={endConversation}
+                  className="px-4 py-2 text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium"
+                >
+                  대화 종료
+                </button>
+              </div>
+
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-slate-50/50 to-white">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    {message.role === 'assistant' && (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center mr-3 shrink-0 shadow-md">
+                        <span className="text-sm">{characterEmojis[selectedCharacterId]}</span>
+                      </div>
+                    )}
+                    <div
+                      className={`max-w-[70%] p-4 rounded-2xl shadow-sm ${
+                        message.role === 'user'
+                          ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white'
+                          : 'bg-white border border-slate-200'
+                      }`}
+                    >
+                      {message.role === 'assistant' && message.emotion && (
+                        <span className="text-lg mr-1">{getEmotionEmoji(message.emotion)}</span>
+                      )}
+                      <span className={message.role === 'user' ? 'text-white' : 'text-slate-700'}>
+                        {message.content}
+                      </span>
+                    </div>
+                    {message.role === 'user' && (
+                      <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center ml-3 shrink-0 shadow-md">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center mr-3 shrink-0 shadow-md">
+                      <span className="text-sm">{characterEmojis[selectedCharacterId]}</span>
+                    </div>
+                    <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
+                      <div className="flex gap-1">
+                        <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                        <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                        <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input */}
+              <div className="p-4 border-t border-slate-100 bg-white">
+                <div className="flex gap-3">
+                  <textarea
+                    ref={inputRef}
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                      }
+                    }}
+                    placeholder="메시지를 입력하세요..."
+                    className="flex-1 px-4 py-3 border border-slate-200 rounded-xl resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    rows={1}
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={!inputMessage.trim() || isLoading}
+                    className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all"
+                  >
+                    전송
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
-        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white shadow-lg`}>
-          {icon}
+
+        {/* Settings Panel */}
+        <div className="col-span-4 space-y-4 overflow-y-auto">
+          {/* Character Selection */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-5">
+            <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide mb-4">캐릭터 선택</h3>
+            <div className="space-y-2">
+              {mockCharacters.map((char) => (
+                <button
+                  key={char.id}
+                  onClick={() => !isConversationStarted && setSelectedCharacterId(char.id)}
+                  disabled={isConversationStarted}
+                  className={`w-full p-3 rounded-xl flex items-center gap-3 transition-all ${
+                    selectedCharacterId === char.id
+                      ? 'bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-300'
+                      : 'bg-slate-50 hover:bg-slate-100 border-2 border-transparent'
+                  } ${isConversationStarted ? 'opacity-60 cursor-not-allowed' : ''}`}
+                >
+                  <span className="text-2xl">{characterEmojis[char.id]}</span>
+                  <div className="text-left">
+                    <p className="font-medium text-slate-800">{char.displayName}</p>
+                    <p className="text-xs text-slate-500">{char.personality.slice(0, 2).join(', ')}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* LLM Settings */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-5">
+            <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide mb-4">LLM 설정</h3>
+
+            <div className="space-y-4">
+              {/* Model Selection */}
+              <div>
+                <label className="block text-sm text-slate-600 mb-2">모델</label>
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  disabled={isConversationStarted}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-slate-700 focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+                >
+                  {LLM_MODELS.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.name} ({model.provider})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Temperature */}
+              <div>
+                <label className="block text-sm text-slate-600 mb-2">
+                  Temperature: {temperature}
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="2"
+                  step="0.1"
+                  value={temperature}
+                  onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                  disabled={isConversationStarted}
+                  className="w-full accent-indigo-500 disabled:opacity-60"
+                />
+              </div>
+
+              {/* Max Tokens */}
+              <div>
+                <label className="block text-sm text-slate-600 mb-2">
+                  Max Tokens: {maxTokens}
+                </label>
+                <input
+                  type="range"
+                  min="256"
+                  max="4096"
+                  step="256"
+                  value={maxTokens}
+                  onChange={(e) => setMaxTokens(parseInt(e.target.value))}
+                  disabled={isConversationStarted}
+                  className="w-full accent-indigo-500 disabled:opacity-60"
+                />
+              </div>
+
+              {/* Stream */}
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={streamEnabled}
+                  onChange={(e) => setStreamEnabled(e.target.checked)}
+                  disabled={isConversationStarted}
+                  className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 disabled:opacity-60"
+                />
+                <span className="text-sm text-slate-700">스트리밍 응답</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Content Settings */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-5">
+            <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide mb-4">콘텐츠 설정</h3>
+
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={nsfwEnabled}
+                  onChange={(e) => setNsfwEnabled(e.target.checked)}
+                  disabled={isConversationStarted}
+                  className="w-5 h-5 rounded border-slate-300 text-red-600 focus:ring-red-500 disabled:opacity-60"
+                />
+                <div>
+                  <span className="text-sm text-slate-700 font-medium">NSFW 허용</span>
+                  <p className="text-xs text-slate-400">성인 콘텐츠 필터 해제</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {/* Prompt Info */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-5">
+            <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide mb-4">프롬프트 정보</h3>
+            {activePrompt && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600">버전</span>
+                  <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-medium">
+                    {activePrompt.version}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600">설명</span>
+                  <span className="text-xs text-slate-500">{activePrompt.description}</span>
+                </div>
+                <div className="pt-2 border-t border-slate-100 mt-2">
+                  <p className="text-xs text-slate-400 line-clamp-3">{activePrompt.content.slice(0, 150)}...</p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
