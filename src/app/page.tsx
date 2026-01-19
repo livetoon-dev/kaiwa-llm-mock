@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { visibleCharacters, mockPromptVersions } from '@/data/mockData';
+import { visibleCharacters, mockPromptVersions, getPromptsByCharacter } from '@/data/mockData';
 import { addSession, updateSession, addMessage, StoredSession, StoredMessage } from '@/lib/storage';
 
 // Helper to get avatar URL for a character
@@ -50,6 +50,7 @@ const LLM_MODELS = [
 
 export default function ChatPage() {
   const [selectedCharacterId, setSelectedCharacterId] = useState(visibleCharacters[0].id);
+  const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState(LLM_MODELS[0].id);
   const [nsfwEnabled, setNsfwEnabled] = useState(false);
   const [nsfwLevel, setNsfwLevel] = useState<'soft' | 'explicit'>('soft');
@@ -93,7 +94,15 @@ export default function ChatPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const selectedCharacter = visibleCharacters.find(c => c.id === selectedCharacterId);
-  const activePrompt = mockPromptVersions.find(p => p.characterId === selectedCharacterId && p.isActive);
+  const characterPrompts = getPromptsByCharacter(selectedCharacterId);
+  const activePrompt = selectedPromptId
+    ? mockPromptVersions.find(p => p.id === selectedPromptId)
+    : mockPromptVersions.find(p => p.characterId === selectedCharacterId && p.isActive);
+
+  // Reset selected prompt when character changes
+  useEffect(() => {
+    setSelectedPromptId(null);
+  }, [selectedCharacterId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -635,24 +644,50 @@ export default function ChatPage() {
             </div>
           </div>
 
-          {/* Prompt Info */}
+          {/* Prompt Selection */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-5">
-            <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide mb-4">プロンプト情報</h3>
+            <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide mb-4">プロンプト選択</h3>
+
+            {/* Version Selector */}
+            <div className="space-y-2 mb-4">
+              {characterPrompts.map((prompt) => (
+                <button
+                  key={prompt.id}
+                  onClick={() => !isConversationStarted && setSelectedPromptId(prompt.id)}
+                  disabled={isConversationStarted}
+                  className={`w-full p-3 rounded-xl text-left transition-all ${
+                    (selectedPromptId === prompt.id || (!selectedPromptId && prompt.isActive))
+                      ? 'bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-300'
+                      : 'bg-slate-50 hover:bg-slate-100 border-2 border-transparent'
+                  } ${isConversationStarted ? 'opacity-60 cursor-not-allowed' : ''}`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-semibold text-slate-800">{prompt.version}</span>
+                    <div className="flex gap-1">
+                      {prompt.isActive && (
+                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
+                          Default
+                        </span>
+                      )}
+                      {(selectedPromptId === prompt.id || (!selectedPromptId && prompt.isActive)) && (
+                        <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">
+                          Selected
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500 line-clamp-1">{prompt.description}</p>
+                </button>
+              ))}
+            </div>
+
+            {/* Selected Prompt Preview */}
             {activePrompt && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600">バージョン</span>
-                  <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-medium">
-                    {activePrompt.version}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600">説明</span>
-                  <span className="text-xs text-slate-500">{activePrompt.description}</span>
-                </div>
-                <div className="pt-2 border-t border-slate-100 mt-2">
-                  <p className="text-xs text-slate-400 line-clamp-3">{activePrompt.content.slice(0, 150)}...</p>
-                </div>
+              <div className="pt-3 border-t border-slate-100">
+                <p className="text-xs text-slate-400 mb-2">プレビュー:</p>
+                <p className="text-xs text-slate-500 line-clamp-4 bg-slate-50 p-2 rounded-lg font-mono">
+                  {activePrompt.content.slice(0, 200)}...
+                </p>
               </div>
             )}
           </div>
