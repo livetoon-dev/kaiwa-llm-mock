@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { mockCharacters } from '@/data/mockData';
+import Image from 'next/image';
+import { visibleCharacters } from '@/data/mockData';
 import { Character } from '@/types';
 
 export default function CharactersPage() {
-  const [selectedCharacter, setSelectedCharacter] = useState<Character>(mockCharacters[0]);
+  const [selectedCharacter, setSelectedCharacter] = useState<Character>(visibleCharacters[0]);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState(selectedCharacter);
 
@@ -35,11 +36,11 @@ export default function CharactersPage() {
         <div className="col-span-4 bg-white rounded-2xl shadow-sm border border-slate-200/60 p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Characters</h2>
-            <span className="text-xs text-slate-400">{mockCharacters.length} total</span>
+            <span className="text-xs text-slate-400">{visibleCharacters.length} total</span>
           </div>
 
           <div className="space-y-3">
-            {mockCharacters.map((char) => (
+            {visibleCharacters.map((char) => (
               <button
                 key={char.id}
                 onClick={() => {
@@ -54,8 +55,8 @@ export default function CharactersPage() {
                 }`}
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-400 via-purple-400 to-indigo-500 flex items-center justify-center shadow-lg">
-                    <span className="text-2xl">🐰</span>
+                  <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-lg">
+                    <Image src={char.avatarUrl} alt={char.displayName} width={56} height={56} className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-slate-800 truncate">{char.displayName}</p>
@@ -78,8 +79,8 @@ export default function CharactersPage() {
           <div className="p-6 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">
             <div className="flex items-end justify-between">
               <div className="flex items-end gap-5">
-                <div className="w-24 h-24 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-xl border-4 border-white/30">
-                  <span className="text-5xl">🐰</span>
+                <div className="w-24 h-24 rounded-2xl overflow-hidden shadow-xl border-4 border-white/30">
+                  <Image src={selectedCharacter.avatarUrl} alt={selectedCharacter.displayName} width={96} height={96} className="w-full h-full object-cover" />
                 </div>
                 <div className="pb-1">
                   <h2 className="text-2xl font-bold text-white">{selectedCharacter.displayName}</h2>

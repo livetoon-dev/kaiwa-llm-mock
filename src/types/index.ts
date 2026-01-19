@@ -10,6 +10,7 @@ export interface Character {
   emotions: string[];
   createdAt: string;
   updatedAt: string;
+  hidden?: boolean;
 }
 
 // Prompt version

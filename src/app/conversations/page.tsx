@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { mockCharacters } from '@/data/mockData';
 import { getSessions, getSessionMessages, deleteSession, StoredSession, StoredMessage } from '@/lib/storage';
 
-const characterEmojis: Record<string, string> = {
-  'una-001': '🐰',
-  'sakura-001': '🌸',
-  'kai-001': '🏄',
+// Helper to get avatar URL for a character (including hidden ones for history)
+const getAvatarUrl = (characterId: string): string => {
+  const char = mockCharacters.find(c => c.id === characterId);
+  return char?.avatarUrl || '/avatars/default.png';
 };
 
 export default function ConversationsPage() {
@@ -96,8 +97,8 @@ export default function ConversationsPage() {
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white shrink-0">
-                        {characterEmojis[session.characterId] || '👤'}
+                      <div className="w-10 h-10 rounded-full overflow-hidden shrink-0">
+                        <Image src={getAvatarUrl(session.characterId)} alt="" width={40} height={40} className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
@@ -142,8 +143,8 @@ export default function ConversationsPage() {
               <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-2xl shadow-lg">
-                      {characterEmojis[selectedSession.characterId] || '👤'}
+                    <div className="w-12 h-12 rounded-xl overflow-hidden shadow-lg">
+                      <Image src={getAvatarUrl(selectedSession.characterId)} alt="" width={48} height={48} className="w-full h-full object-cover" />
                     </div>
                     <div>
                       <h2 className="font-semibold text-slate-800">
@@ -173,8 +174,8 @@ export default function ConversationsPage() {
                     className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     {message.role === 'assistant' && (
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center mr-3 shrink-0 shadow-md">
-                        <span className="text-sm">{characterEmojis[selectedSession.characterId] || '👤'}</span>
+                      <div className="w-8 h-8 rounded-full overflow-hidden mr-3 shrink-0 shadow-md">
+                        <Image src={getAvatarUrl(selectedSession.characterId)} alt="" width={32} height={32} className="w-full h-full object-cover" />
                       </div>
                     )}
                     <div

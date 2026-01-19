@@ -1,16 +1,11 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { mockPromptVersions, mockCharacters, getPromptsByCharacter } from '@/data/mockData';
-
-const characterEmojis: Record<string, string> = {
-  'una-001': '🐰',
-  'sakura-001': '🌸',
-  'kai-001': '🏄',
-};
+import Image from 'next/image';
+import { mockPromptVersions, visibleCharacters, getPromptsByCharacter } from '@/data/mockData';
 
 export default function PromptsPage() {
-  const [selectedCharacterId, setSelectedCharacterId] = useState(mockCharacters[0].id);
+  const [selectedCharacterId, setSelectedCharacterId] = useState(visibleCharacters[0].id);
   const characterPrompts = useMemo(() => getPromptsByCharacter(selectedCharacterId), [selectedCharacterId]);
 
   const [selectedPrompt, setSelectedPrompt] = useState(characterPrompts[0]);
@@ -41,7 +36,7 @@ export default function PromptsPage() {
     setIsSaving(false);
   };
 
-  const selectedCharacter = mockCharacters.find(c => c.id === selectedCharacterId);
+  const selectedCharacter = visibleCharacters.find(c => c.id === selectedCharacterId);
 
   return (
     <div className="h-full animate-fadeIn">
@@ -85,7 +80,7 @@ export default function PromptsPage() {
 
       {/* Character Tabs */}
       <div className="mb-6 flex gap-2 p-1 bg-white rounded-xl shadow-sm border border-slate-200/60">
-        {mockCharacters.map((char) => (
+        {visibleCharacters.map((char) => (
           <button
             key={char.id}
             onClick={() => handleCharacterChange(char.id)}
@@ -95,7 +90,9 @@ export default function PromptsPage() {
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            <span className="text-xl">{characterEmojis[char.id] || '👤'}</span>
+            <div className="w-8 h-8 rounded-full overflow-hidden shrink-0">
+              <Image src={char.avatarUrl} alt={char.displayName} width={32} height={32} className="w-full h-full object-cover" />
+            </div>
             <span>{char.displayName}</span>
             <span className={`ml-1 px-2 py-0.5 rounded-full text-xs ${
               selectedCharacterId === char.id
@@ -160,8 +157,8 @@ export default function PromptsPage() {
               <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl shadow-lg">
-                      {characterEmojis[selectedCharacterId] || '👤'}
+                    <div className="w-12 h-12 rounded-xl overflow-hidden shadow-lg">
+                      <Image src={selectedCharacter?.avatarUrl || ''} alt={selectedCharacter?.displayName || ''} width={48} height={48} className="w-full h-full object-cover" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">

@@ -1,15 +1,14 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { mockCharacters, mockPromptVersions } from '@/data/mockData';
+import Image from 'next/image';
+import { visibleCharacters, mockPromptVersions } from '@/data/mockData';
 import { addSession, updateSession, addMessage, StoredSession, StoredMessage } from '@/lib/storage';
 
-const characterEmojis: Record<string, string> = {
-  'una-001': '🐰',
-  'sakura-001': '🌸',
-  'kai-001': '🏄',
-  'hikari-001': '💖',
-  'rio-001': '🧶',
+// Helper to get avatar URL for a character
+const getAvatarUrl = (characterId: string): string => {
+  const char = visibleCharacters.find(c => c.id === characterId);
+  return char?.avatarUrl || '/avatars/default.png';
 };
 
 interface ChatMessage {
@@ -50,7 +49,7 @@ const LLM_MODELS = [
 ];
 
 export default function ChatPage() {
-  const [selectedCharacterId, setSelectedCharacterId] = useState(mockCharacters[0].id);
+  const [selectedCharacterId, setSelectedCharacterId] = useState(visibleCharacters[0].id);
   const [selectedModel, setSelectedModel] = useState(LLM_MODELS[0].id);
   const [nsfwEnabled, setNsfwEnabled] = useState(false);
   const [nsfwLevel, setNsfwLevel] = useState<'soft' | 'explicit'>('soft');
@@ -93,7 +92,7 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const selectedCharacter = mockCharacters.find(c => c.id === selectedCharacterId);
+  const selectedCharacter = visibleCharacters.find(c => c.id === selectedCharacterId);
   const activePrompt = mockPromptVersions.find(p => p.characterId === selectedCharacterId && p.isActive);
 
   useEffect(() => {
@@ -337,8 +336,8 @@ export default function ChatPage() {
             /* Start Screen */
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center max-w-md">
-                <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-6 shadow-xl">
-                  <span className="text-5xl">{characterEmojis[selectedCharacterId] || '👤'}</span>
+                <div className="w-24 h-24 rounded-3xl overflow-hidden mx-auto mb-6 shadow-xl">
+                  <Image src={getAvatarUrl(selectedCharacterId)} alt={selectedCharacter?.displayName || ''} width={96} height={96} className="w-full h-full object-cover" />
                 </div>
                 <h1 className="text-2xl font-bold text-slate-800 mb-2">
                   {selectedCharacter?.displayName}と会話する
@@ -363,8 +362,8 @@ export default function ChatPage() {
               {/* Chat Header */}
               <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-2xl shadow-lg">
-                    {characterEmojis[selectedCharacterId] || '👤'}
+                  <div className="w-12 h-12 rounded-xl overflow-hidden shadow-lg">
+                    <Image src={getAvatarUrl(selectedCharacterId)} alt={selectedCharacter?.displayName || ''} width={48} height={48} className="w-full h-full object-cover" />
                   </div>
                   <div>
                     <h2 className="font-semibold text-slate-800">{selectedCharacter?.displayName}</h2>
@@ -389,8 +388,8 @@ export default function ChatPage() {
                     className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     {message.role === 'assistant' && (
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center mr-3 shrink-0 shadow-md">
-                        <span className="text-sm">{characterEmojis[selectedCharacterId]}</span>
+                      <div className="w-8 h-8 rounded-full overflow-hidden mr-3 shrink-0 shadow-md">
+                        <Image src={getAvatarUrl(selectedCharacterId)} alt="" width={32} height={32} className="w-full h-full object-cover" />
                       </div>
                     )}
                     <div
@@ -418,8 +417,8 @@ export default function ChatPage() {
                 ))}
                 {isLoading && (
                   <div className="flex justify-start">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center mr-3 shrink-0 shadow-md">
-                      <span className="text-sm">{characterEmojis[selectedCharacterId]}</span>
+                    <div className="w-8 h-8 rounded-full overflow-hidden mr-3 shrink-0 shadow-md">
+                      <Image src={getAvatarUrl(selectedCharacterId)} alt="" width={32} height={32} className="w-full h-full object-cover" />
                     </div>
                     <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
                       <div className="flex gap-1">
@@ -470,7 +469,7 @@ export default function ChatPage() {
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-5">
             <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide mb-4">キャラクター選択</h3>
             <div className="space-y-2">
-              {mockCharacters.map((char) => (
+              {visibleCharacters.map((char) => (
                 <button
                   key={char.id}
                   onClick={() => !isConversationStarted && setSelectedCharacterId(char.id)}
@@ -481,7 +480,9 @@ export default function ChatPage() {
                       : 'bg-slate-50 hover:bg-slate-100 border-2 border-transparent'
                   } ${isConversationStarted ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
-                  <span className="text-2xl">{characterEmojis[char.id]}</span>
+                  <div className="w-10 h-10 rounded-full overflow-hidden shrink-0">
+                    <Image src={char.avatarUrl} alt={char.displayName} width={40} height={40} className="w-full h-full object-cover" />
+                  </div>
                   <div className="text-left">
                     <p className="font-medium text-slate-800">{char.displayName}</p>
                     <p className="text-xs text-slate-500">{char.personality.slice(0, 2).join(', ')}</p>

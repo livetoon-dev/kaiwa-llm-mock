@@ -12,6 +12,7 @@ export const mockCharacters: Character[] = [
     emotions: ['happy', 'excited', 'sad', 'calm', 'shy', 'surprised', 'neutral'],
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-15T10:30:00Z',
+    hidden: true,
   },
   {
     id: 'sakura-001',
@@ -24,6 +25,7 @@ export const mockCharacters: Character[] = [
     emotions: ['happy', 'calm', 'shy', 'surprised', 'neutral'],
     createdAt: '2025-01-05T00:00:00Z',
     updatedAt: '2025-01-14T12:00:00Z',
+    hidden: true,
   },
   {
     id: 'kai-001',
@@ -36,15 +38,16 @@ export const mockCharacters: Character[] = [
     emotions: ['happy', 'excited', 'calm', 'surprised', 'neutral'],
     createdAt: '2025-01-10T00:00:00Z',
     updatedAt: '2025-01-15T09:00:00Z',
+    hidden: true,
   },
   {
     id: 'hikari-001',
     name: 'hikari',
     displayName: '綾瀬ひかり',
-    description: '誰からも愛されるギャル女子高生。明るくてポジティブ、はっきり意見を言う。',
-    personality: ['ギャル', 'ポジティブ', 'はっきり者', 'トレンド好き'],
+    description: '華やかな笑顔で、どんな悩みも吹き飛ばしてくれる。明るくてノリがよくて、話しているとつい笑ってしまう。軽い罵倒も加えながらあなたを笑顔にしてくれる、元気いっぱいのムードメイカー。',
+    personality: ['ピリ辛ギャル', 'ポジティブ', 'ムードメイカー', 'ノリがいい'],
     speechPatterns: ['ウチ/アタシ', '〜じゃん', '〜だし', 'マジ'],
-    avatarUrl: '/avatars/hikari.png',
+    avatarUrl: 'https://images.ctfassets.net/0ok5kbfk1uaj/14uwJmJwMcSGZafkJOm9TZ/ef37ff8262beb1a2b34e65512faa9c9b/gyaru_icon.webp',
     emotions: ['happy', 'excited', 'calm', 'surprised', 'neutral'],
     createdAt: '2025-01-16T00:00:00Z',
     updatedAt: '2025-01-16T00:00:00Z',
@@ -53,15 +56,18 @@ export const mockCharacters: Character[] = [
     id: 'rio-001',
     name: 'rio',
     displayName: '朝霧りお',
-    description: '誰からも愛される優しい女の子。読書と編み物が好き、心情理解に長けている。',
-    personality: ['優しい', '責任感', '観察力', '読書家'],
+    description: 'ふわりとした笑顔と優しい声であなたを迎えてくれる。時折見せる頼もしさにはドキッとすることも。あなたの気持ちに寄り添いながら、そっと支えてくれる、癒しと安心をくれる女の子。',
+    personality: ['やさしいヒロイン', '癒し系', '頼もしい', '寄り添う'],
     speechPatterns: ['わたし', '〜だよ', '〜かな'],
-    avatarUrl: '/avatars/rio.png',
+    avatarUrl: 'https://images.ctfassets.net/0ok5kbfk1uaj/1eO2yLwDAsRzMHp4Ko3Qcd/e690a203b407d5f85874b00c52e9857b/seiso_icon.webp',
     emotions: ['happy', 'calm', 'shy', 'surprised', 'neutral'],
     createdAt: '2025-01-16T00:00:00Z',
     updatedAt: '2025-01-16T00:00:00Z',
   },
 ];
+
+// Filtered characters for UI display (excludes hidden characters)
+export const visibleCharacters = mockCharacters.filter(c => !c.hidden);
 
 export const mockPromptVersions: PromptVersion[] = [
   // うーな prompts
