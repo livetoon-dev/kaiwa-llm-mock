@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GROK_API_KEY = process.env.GROK_API_KEY;
 
 interface JudgeRequest {
   characterId: string;
@@ -101,9 +101,9 @@ imagePromptにセクシーだが露骨でない表現（seductive, suggestive, r
 
 export async function POST(request: NextRequest) {
   try {
-    if (!GEMINI_API_KEY) {
+    if (!GROK_API_KEY) {
       return NextResponse.json(
-        { success: false, error: 'GEMINI_API_KEY is not set' },
+        { success: false, error: 'GROK_API_KEY is not set' },
         { status: 500 }
       );
     }
@@ -142,26 +142,30 @@ ${characterName}: ${lastAssistantMessage}
     // Get dynamic system prompt based on NSFW settings
     const systemPrompt = getJudgeSystemPrompt(nsfwEnabled, nsfwLevel);
 
-    // Call Gemini for judgment (using fast model for quick decisions)
+    // Call Grok for judgment (Grok has no NSFW restrictions)
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
+      'https://api.x.ai/v1/chat/completions',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${GROK_API_KEY}`,
+        },
         body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          generationConfig: {
-            temperature: 0.3, // Low temperature for consistent decisions
-            maxOutputTokens: 512,
-          },
+          model: 'grok-4-1-fast-non-reasoning',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: 0.3,
+          max_tokens: 512,
         }),
       }
     );
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('Gemini Judge API error:', error);
+      console.error('Grok Judge API error:', error);
       return NextResponse.json(
         { success: false, error: `Judge API error: ${error}` },
         { status: response.status }
@@ -170,14 +174,15 @@ ${characterName}: ${lastAssistantMessage}
 
     const data = await response.json();
 
-    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+    if (!data.choices?.[0]?.message?.content) {
+      console.error('Grok response structure:', JSON.stringify(data));
       return NextResponse.json(
         { success: false, error: 'No response from judge' },
         { status: 500 }
       );
     }
 
-    const responseText = data.candidates[0].content.parts[0].text;
+    const responseText = data.choices[0].message.content;
     console.log('Judge raw response:', responseText);
 
     // Parse JSON from response

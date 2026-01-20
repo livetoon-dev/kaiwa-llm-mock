@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import JSZip from 'jszip';
 
 const NOVELAI_API_KEY = process.env.NOVELAI_API_KEY;
 
@@ -17,12 +18,12 @@ interface ImageGenerateRequest {
 // Character-specific base prompts for consistency
 const CHARACTER_BASE_PROMPTS: Record<string, { positive: string; negative: string }> = {
   'hikari-001': {
-    positive: '1girl, solo, gyaru, blonde long hair, pink and blue highlights, heart necklace, energetic, bright smile, japanese girl, 18 years old, beautiful face, perfect face, slim waist, medium breasts, beautiful body, thighs',
-    negative: 'ugly, deformed, blurry, low quality, bad anatomy, extra limbs, missing fingers, bad hands, worst quality, jpeg artifacts',
+    positive: '1girl, solo, gyaru, blonde long hair, pink and blue highlights in hair, heart necklace, energetic, bright smile, japanese girl, 18 years old, beautiful face, perfect face, slim waist, medium breasts, beautiful body, thighs, tan skin',
+    negative: 'ugly, deformed, blurry, low quality, bad anatomy, extra limbs, missing fingers, bad hands, worst quality, jpeg artifacts, silver hair, gray hair, white hair',
   },
   'rio-001': {
-    positive: '1girl, solo, gentle girl, blue-gray hair in ponytail, elegant, warm smile, kind eyes, 23 years old, japanese woman, beautiful face, perfect face, slim body, large breasts, beautiful body, long legs',
-    negative: 'ugly, deformed, blurry, low quality, bad anatomy, extra limbs, missing fingers, bad hands, worst quality, jpeg artifacts',
+    positive: '1girl, solo, gentle girl, dark blue hair, navy blue hair, blue hair in ponytail, blue eyes, elegant, warm smile, kind eyes, 23 years old, japanese woman, beautiful face, perfect face, slim body, large breasts, beautiful body, long legs, fair skin',
+    negative: 'ugly, deformed, blurry, low quality, bad anatomy, extra limbs, missing fingers, bad hands, worst quality, jpeg artifacts, silver hair, gray hair, white hair, blonde hair',
   },
 };
 
@@ -82,21 +83,27 @@ export async function POST(request: NextRequest) {
     const fullNegative = `${charPrompt.negative}, ${negativePrompt}${nsfwNegative}`;
 
     // NovelAI Image Generation API
+    // Using nai-diffusion-3 for compatibility (V4+ requires newer subscription)
     const requestBody: Record<string, unknown> = {
       input: fullPrompt,
-      model: 'nai-diffusion-3', // NAI Diffusion Anime V3
+      model: 'nai-diffusion-3',
       action: referenceImage ? 'img2img' : 'generate',
       parameters: {
         width,
         height,
-        scale: 5, // CFG scale
+        scale: 5, // CFG scale - lower is more creative, higher follows prompt more
         sampler: 'k_euler_ancestral',
         steps: 28,
         n_samples: 1,
-        ucPreset: 0,
+        ucPreset: 0, // 0 = Heavy (recommended for anime)
         qualityToggle: true,
         negative_prompt: fullNegative,
         seed: Math.floor(Math.random() * 2147483647),
+        // V3 specific - disable unwanted defaults
+        sm: false, // SMEA sampler
+        sm_dyn: false, // Dynamic SMEA
+        cfg_rescale: 0, // CFG rescale
+        noise_schedule: 'native', // Use native noise schedule
       },
     };
 
@@ -122,7 +129,7 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('NovelAI API error:', error);
+      console.error('NovelAI API error:', response.status, error);
       return NextResponse.json(
         { success: false, error: `NovelAI API error (${response.status}): ${error}` },
         { status: response.status }
@@ -132,47 +139,41 @@ export async function POST(request: NextRequest) {
     // NovelAI returns a zip file with the image
     const zipBuffer = await response.arrayBuffer();
 
-    // Extract image from zip (the image is the first file in the zip)
-    const zipData = new Uint8Array(zipBuffer);
+    console.log('NovelAI response size:', zipBuffer.byteLength, 'bytes');
 
-    // Find PNG signature in zip (simple extraction)
-    // PNG starts with 89 50 4E 47 0D 0A 1A 0A
-    let pngStart = -1;
-    for (let i = 0; i < zipData.length - 8; i++) {
-      if (zipData[i] === 0x89 && zipData[i + 1] === 0x50 &&
-          zipData[i + 2] === 0x4E && zipData[i + 3] === 0x47) {
-        pngStart = i;
-        break;
-      }
-    }
-
-    if (pngStart === -1) {
+    // Use JSZip to properly extract the image
+    let zip: JSZip;
+    try {
+      zip = await JSZip.loadAsync(zipBuffer);
+    } catch (zipError) {
+      // Not a ZIP, try to read as text for error message
+      const textContent = new TextDecoder().decode(new Uint8Array(zipBuffer).slice(0, 500));
+      console.error('Failed to parse ZIP:', zipError, 'Content:', textContent);
       return NextResponse.json(
-        { success: false, error: 'Could not find image in response' },
+        { success: false, error: `Failed to parse response as ZIP: ${textContent.slice(0, 200)}` },
         { status: 500 }
       );
     }
 
-    // Extract PNG data (find IEND chunk)
-    let pngEnd = zipData.length;
-    for (let i = pngStart; i < zipData.length - 8; i++) {
-      // IEND chunk ends with 49 45 4E 44 AE 42 60 82
-      if (zipData[i] === 0x49 && zipData[i + 1] === 0x45 &&
-          zipData[i + 2] === 0x4E && zipData[i + 3] === 0x44 &&
-          zipData[i + 4] === 0xAE && zipData[i + 5] === 0x42) {
-        pngEnd = i + 8; // Include CRC
-        break;
-      }
+    // Find the first PNG file in the ZIP
+    const fileNames = Object.keys(zip.files);
+    console.log('Files in ZIP:', fileNames);
+
+    const pngFile = fileNames.find(name => name.endsWith('.png'));
+    if (!pngFile) {
+      console.error('No PNG file found in ZIP. Files:', fileNames);
+      return NextResponse.json(
+        { success: false, error: `No PNG file in ZIP. Files: ${fileNames.join(', ')}` },
+        { status: 500 }
+      );
     }
 
-    const pngData = zipData.slice(pngStart, pngEnd);
-    const base64Image = Buffer.from(pngData).toString('base64');
-
-    console.log('Image generated successfully, size:', pngData.length);
+    const pngData = await zip.files[pngFile].async('base64');
+    console.log('Image extracted successfully:', pngFile, 'base64 length:', pngData.length);
 
     return NextResponse.json({
       success: true,
-      image: `data:image/png;base64,${base64Image}`,
+      image: `data:image/png;base64,${pngData}`,
       prompt: fullPrompt,
     });
   } catch (error) {

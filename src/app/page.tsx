@@ -52,14 +52,14 @@ const LLM_MODELS = [
 export default function ChatPage() {
   const [selectedCharacterId, setSelectedCharacterId] = useState(visibleCharacters[0].id);
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
-  const [selectedModel, setSelectedModel] = useState(LLM_MODELS[0].id);
-  const [nsfwEnabled, setNsfwEnabled] = useState(false);
-  const [nsfwLevel, setNsfwLevel] = useState<'soft' | 'explicit'>('soft');
-  const [allowViolence, setAllowViolence] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('grok-4-1-fast-non-reasoning');
+  const [nsfwEnabled, setNsfwEnabled] = useState(true); // Default: ON
+  const [nsfwLevel, setNsfwLevel] = useState<'soft' | 'explicit'>('explicit'); // Default: explicit
+  const [allowViolence, setAllowViolence] = useState(true); // Default: ON
   const [streamEnabled, setStreamEnabled] = useState(true);
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [imageGenEnabled, setImageGenEnabled] = useState(false);
+  const [imageGenEnabled, setImageGenEnabled] = useState(true); // Default: ON
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens] = useState(1024);
@@ -177,6 +177,27 @@ export default function ChatPage() {
     }
   };
 
+  // Helper to fetch image and convert to base64
+  const imageToBase64 = async (imageUrl: string): Promise<string | null> => {
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result as string;
+          // Remove data URL prefix to get just the base64 data
+          const base64Data = base64.split(',')[1];
+          resolve(base64Data);
+        };
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Failed to convert image to base64:', error);
+      return null;
+    }
+  };
+
   // Image generation with AI judge
   const judgeAndGenerateImage = async (
     assistantMessage: string,
@@ -209,8 +230,15 @@ export default function ChatPage() {
         return null;
       }
 
-      // Step 2: Generate image if judge approves
-      console.log('Generating image with prompt:', judgeData.imagePrompt, { nsfw: judgeData.nsfw });
+      // Step 2: Get reference image from character avatar
+      let referenceImage: string | null = null;
+      if (selectedCharacter?.avatarUrl) {
+        console.log('Fetching reference image from:', selectedCharacter.avatarUrl);
+        referenceImage = await imageToBase64(selectedCharacter.avatarUrl);
+      }
+
+      // Step 3: Generate image if judge approves
+      console.log('Generating image with prompt:', judgeData.imagePrompt, { nsfw: judgeData.nsfw, hasReference: !!referenceImage });
 
       const generateResponse = await fetch('/api/image/generate', {
         method: 'POST',
@@ -220,6 +248,8 @@ export default function ChatPage() {
           characterId: selectedCharacterId,
           nsfw: nsfwEnabled && judgeData.nsfw,
           nsfwLevel,
+          referenceImage, // Pass avatar as reference for img2img
+          referenceStrength: 0.6, // Balance between reference and prompt
         }),
       });
 
