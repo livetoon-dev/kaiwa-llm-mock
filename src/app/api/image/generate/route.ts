@@ -84,38 +84,39 @@ export async function POST(request: NextRequest) {
 
     // NovelAI Image Generation API
     // Using nai-diffusion-3 for compatibility (V4+ requires newer subscription)
-    const requestBody: Record<string, unknown> = {
-      input: fullPrompt,
-      model: 'nai-diffusion-3',
-      action: referenceImage ? 'img2img' : 'generate',
-      parameters: {
-        width,
-        height,
-        scale: 5, // CFG scale - lower is more creative, higher follows prompt more
-        sampler: 'k_euler_ancestral',
-        steps: 28,
-        n_samples: 1,
-        ucPreset: 0, // 0 = Heavy (recommended for anime)
-        qualityToggle: true,
-        negative_prompt: fullNegative,
-        seed: Math.floor(Math.random() * 2147483647),
-        // V3 specific - disable unwanted defaults
-        sm: false, // SMEA sampler
-        sm_dyn: false, // Dynamic SMEA
-        cfg_rescale: 0, // CFG rescale
-        noise_schedule: 'native', // Use native noise schedule
-      },
+    const parameters: Record<string, unknown> = {
+      width,
+      height,
+      scale: 5, // CFG scale - lower is more creative, higher follows prompt more
+      sampler: 'k_euler_ancestral',
+      steps: 28,
+      n_samples: 1,
+      ucPreset: 0, // 0 = Heavy (recommended for anime)
+      qualityToggle: true,
+      negative_prompt: fullNegative,
+      seed: Math.floor(Math.random() * 2147483647),
+      // V3 specific - disable unwanted defaults
+      sm: false, // SMEA sampler
+      sm_dyn: false, // Dynamic SMEA
+      cfg_rescale: 0, // CFG rescale
+      noise_schedule: 'native', // Use native noise schedule
     };
 
-    // Add reference image for img2img
+    // Add Vibe Transfer for character consistency (not img2img)
     if (referenceImage) {
-      requestBody.parameters = {
-        ...requestBody.parameters as object,
-        image: referenceImage,
-        strength: referenceStrength,
-        noise: 0.0,
-      };
+      parameters.reference_image_multiple = [referenceImage];
+      parameters.reference_information_extracted_multiple = [1]; // Extract style info
+      parameters.reference_strength_multiple = [referenceStrength]; // Apply strength
     }
+
+    const requestBody = {
+      input: fullPrompt,
+      model: 'nai-diffusion-3',
+      action: 'generate', // Always use generate, Vibe Transfer is via parameters
+      parameters,
+    };
+
+    console.log('NovelAI request:', { hasVibeTransfer: !!referenceImage, width, height });
 
     const response = await fetch('https://image.novelai.net/ai/generate-image', {
       method: 'POST',
