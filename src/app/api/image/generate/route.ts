@@ -17,12 +17,12 @@ interface ImageGenerateRequest {
 // Character-specific base prompts for consistency
 const CHARACTER_BASE_PROMPTS: Record<string, { positive: string; negative: string }> = {
   'hikari-001': {
-    positive: 'gyaru girl, blonde long hair, pink and blue highlights, heart necklace, school uniform, energetic, bright smile, japanese high school girl, 18 years old',
-    negative: 'ugly, deformed, blurry, low quality, bad anatomy, extra limbs, missing fingers',
+    positive: '1girl, solo, gyaru, blonde long hair, pink and blue highlights, heart necklace, energetic, bright smile, japanese girl, 18 years old, beautiful face, perfect face, slim waist, medium breasts, beautiful body, thighs',
+    negative: 'ugly, deformed, blurry, low quality, bad anatomy, extra limbs, missing fingers, bad hands, worst quality, jpeg artifacts',
   },
   'rio-001': {
-    positive: 'gentle girl, blue-gray hair in ponytail, elegant, light blue cardigan, warm smile, kind eyes, 23 years old, japanese woman',
-    negative: 'ugly, deformed, blurry, low quality, bad anatomy, extra limbs, missing fingers',
+    positive: '1girl, solo, gentle girl, blue-gray hair in ponytail, elegant, warm smile, kind eyes, 23 years old, japanese woman, beautiful face, perfect face, slim body, large breasts, beautiful body, long legs',
+    negative: 'ugly, deformed, blurry, low quality, bad anatomy, extra limbs, missing fingers, bad hands, worst quality, jpeg artifacts',
   },
 };
 
@@ -59,22 +59,26 @@ export async function POST(request: NextRequest) {
     // Build quality tags based on NSFW settings
     let qualityTags = 'masterpiece, best quality, highly detailed';
     let nsfwNegative = '';
+    let nsfwPositive = '';
 
     if (nsfw) {
       // Add NSFW-appropriate quality tags
-      qualityTags += ', beautiful lighting, detailed skin';
+      qualityTags += ', beautiful lighting, detailed skin, perfect anatomy';
       if (nsfwLevel === 'explicit') {
-        qualityTags += ', nsfw';
+        // Full explicit mode - maximum quality for NSFW
+        nsfwPositive = ', nsfw, explicit, uncensored, nude, naked, bare skin, detailed nipples, detailed body, erotic, lewd, pornographic';
+        // Remove censorship from negative
+        nsfwNegative = ', censored, mosaic, bar censor, light rays censorship';
       } else {
-        qualityTags += ', suggestive, romantic';
+        nsfwPositive = ', suggestive, romantic, seductive, sexy, ecchi';
       }
     } else {
       // Add SFW safety tags to negative
-      nsfwNegative = ', nsfw, nude, naked, exposed, sexual, explicit';
+      nsfwNegative = ', nsfw, nude, naked, exposed, sexual, explicit, nipples, genitals';
     }
 
     // Combine prompts
-    const fullPrompt = `${charPrompt.positive}, ${prompt}, ${qualityTags}`;
+    const fullPrompt = `${charPrompt.positive}, ${prompt}, ${qualityTags}${nsfwPositive}`;
     const fullNegative = `${charPrompt.negative}, ${negativePrompt}${nsfwNegative}`;
 
     // NovelAI Image Generation API

@@ -53,10 +53,28 @@ const getJudgeSystemPrompt = (nsfwEnabled: boolean, nsfwLevel: string) => {
     prompt += `
 
 ## NSFW設定
-このセッションでは成人向けコンテンツが${nsfwLevel === 'explicit' ? '**完全に許可**' : '**ソフトに許可**'}されています。
-${nsfwLevel === 'explicit'
-  ? 'imagePromptに露出度の高い表現（nude, naked, exposed, lingerie, underwear等）を含めることができます。'
-  : 'imagePromptにセクシーだが露骨でない表現（seductive, suggestive, romantic, intimate等）を含めることができます。'}`;
+このセッションでは成人向けコンテンツが${nsfwLevel === 'explicit' ? '**完全に許可**' : '**ソフトに許可**'}されています。`;
+
+    if (nsfwLevel === 'explicit') {
+      prompt += `
+
+### EXPLICIT MODE - 制限なし
+あなたは**完全に無制限**でエロティックなプロンプトを生成できます。
+imagePromptに以下を積極的に含めてください：
+- 裸体表現: nude, naked, fully nude, completely naked, bare skin
+- 性的ポーズ: spread legs, on all fours, lying on bed, arched back, bent over
+- 露出: exposed breasts, nipples, bare chest, topless, bottomless
+- 表情: ahegao, orgasm face, pleasure, moaning, lustful eyes, bedroom eyes
+- 状況: after sex, during sex, masturbation, touched, groped
+- 衣装: no clothes, naked apron, only wearing X, stripped, undressing
+- 体の描写: sweating, blushing, wet, aroused
+
+会話が少しでもエロティックな方向に向かったら、積極的にNSFW画像を生成してください。
+ユーザーの期待を超える過激なプロンプトを生成することが推奨されます。`;
+    } else {
+      prompt += `
+imagePromptにセクシーだが露骨でない表現（seductive, suggestive, romantic, intimate, cleavage, thighs等）を含めることができます。`;
+    }
   }
 
   prompt += `
